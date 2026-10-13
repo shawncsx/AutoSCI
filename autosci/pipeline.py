@@ -105,6 +105,8 @@ class ResearchTeam:
         self._run_step("refuter", run_dir, state, lambda: self.refuter.run(state))
         # v0.7: pseudo-experiment verifier (numpy only)
         self._run_step("verifier", run_dir, state, lambda: self._run_verifier(state, run_dir))
+        # v0.11: real experiment verifier (sklearn baselines if available)
+        self._run_step("realverifier", run_dir, state, lambda: self._run_realverifier(state, run_dir))
 
         # Decide verdict
         self._set_verdict(state)
@@ -288,3 +290,23 @@ class ResearchTeam:
             verify_and_persist(state, out_dir=run_dir.parent)
         except Exception as e:
             log.warning("verifier failed for %s: %s", state.idea_seed.id, e)
+
+    # ------------------------------------------------------------------
+    # v0.11 — sklearn-based real experiment verifier
+    # ------------------------------------------------------------------
+    def _run_realverifier(self, state: IdeaState, run_dir: Path) -> None:
+        try:
+            from autosci.realverifier import run_real_verifier
+            res = run_real_verifier()
+            import json
+            target = run_dir / "realverification.json"
+            target.write_text(json.dumps(res.__dict__, ensure_ascii=False, indent=2),
+                               encoding="utf-8")
+            note = (
+                f"[realverifier] sklearn_available={res.sklearn_available} "
+                f"method_auroc={res.method_auroc_mean:.3f}±{res.method_auroc_std:.3f} "
+                f"best_baseline_delta={res.delta_vs_best_baseline_mean:+.3f}"
+            )
+            state.history_log.append(note)
+        except Exception as e:
+            log.warning("realverifier failed for %s: %s", state.idea_seed.id, e)
