@@ -448,3 +448,63 @@ def get_user_builder(name: str) -> Callable[..., str]:
         "reviewer": user_reviewer,
         "refuter": user_refuter,
     }[name]
+
+
+# v0.14 — render_user_prompt helper for the IDE/MCP passive mode
+def render_user_prompt(step: str, context: dict) -> str:
+    """Render a user prompt with the given context dict.
+
+    Convenience wrapper around get_user_builder for the v0.14 MCP
+    server which passes dicts (not IdeaState) since the IDE LLM is
+    expected to do the actual rendering.
+    """
+    return get_user_builder(step)(context)
+
+
+# ---------------------------------------------------------------------------
+# v0.14 — exports for MCP / IDE-passive mode
+# ---------------------------------------------------------------------------
+
+PIPELINE_STEPS: list[str] = AGENT_ORDER
+
+# Raw Jinja2 source for each user_prompt (for passive mode export).
+# The IDE LLM should fill these in directly.
+_USER_TEMPLATES: dict[str, str] = {
+    "idea_closer":      "原始 idea | {{ seed.id }} / {{ seed.title }} / {{ seed.one_liner }} / {{ seed.angle }}",
+    "lit_surveyer":     "已收敛 claim | {{ state.refined.claim }} | k={{ k }} | kb_text from autosci_idea_anchors",
+    "method_designer":   "Idea + lit_survey 已就位 | claim={{ state.refined.claim }} | 用 lit_survey 列表",
+    "exp_designer":      "Method 已确定 | arch={{ state.method_spec.architecture }}",
+    "paper_writer":      "Full IdeaState 写 IMRaD | title=... | method=... | exp=...",
+    "code_sketcher":     "Method | {{ state.method_spec.algorithm }}",
+    "reviewer":          "PaperDraft | title, abstract, sections | refs count",
+    "refuter":           "Full IdeaState | primary_hypothesis | cross_cohort_protocol | metrics | baselines",
+}
+
+
+def export_pipeline_prompts() -> dict[str, dict[str, str]]:
+    """Return {agent: {system, user_template, fill_in_hint}} for all 10 steps.
+
+    user_template is a plain-text description of what the IDE LLM
+    should fill in; system is the system message. The IDE LLM can
+    then call its own chat-completion API to actually generate the
+    response.
+    """
+    out: dict[str, dict[str, str]] = {}
+    for step in AGENT_ORDER:
+        out[step] = {
+            "system": get_system(step),
+            "user_template": _USER_TEMPLATES[step],
+        }
+    return out
+
+
+# Backwards-compat alias for the older "ALL_PROMPTS" shape used by some tests
+ALL_PROMPTS: dict[str, dict[str, str]] = {
+    "system": {s: get_system(s) for s in AGENT_ORDER},
+    "user_template": _USER_TEMPLATES,
+}
+
+
+def render_user_prompt(step: str, context: dict) -> str:
+    """Render a user-prompt template with the given context."""
+    return get_user_builder(step)(context)
