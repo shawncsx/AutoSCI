@@ -111,6 +111,19 @@ def _text(text: str) -> list[Any]:
     return [TextContent(type="text", text=text)]
 
 
+def _all_digest_docs() -> list:
+    """Load every *.digest.md (and *.fulltext.md) under our known dirs."""
+    from autosci.kb import parse_digest
+    out = []
+    for d in _collect_digest_dirs():
+        for f in d.glob("*.digest.md"):
+            try:
+                out.append(parse_digest(f))
+            except Exception:
+                pass
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Passive-mode tools (no LLM needed)
 # ---------------------------------------------------------------------------
@@ -304,6 +317,46 @@ def make_server(runs_dir: Path, vault_dir: Path, distill_path: Path):
                      "verdict": {"type": "string", "default": "kept",
                                  "enum": ["kept", "revised", "refuted"]},
                  }, "required": ["idea_id", "section", "content"]}),
+
+            # ── v0.15: deep analysis + idea scoring + themes ──
+            Tool(name="autosci_analyze_paper",
+                 description=(
+                     "[PASSIVE] Return a structured 5-section analysis of a paper "
+                     "(research question / method / data / main result / limitations + opportunities). "
+                     "No LLM — pure heuristic extraction from the KB digest. "
+                     "If doc_id is empty, picks the first KB paper."
+                 ),
+                 inputSchema={"type": "object", "properties": {
+                     "doc_id": {"type": "string", "default": ""},
+                 }}),
+            Tool(name="autosci_analyze_corpus",
+                 description=(
+                     "[PASSIVE] Return structured analysis for the top-N papers in the KB."
+                 ),
+                 inputSchema={"type": "object", "properties": {
+                     "top": {"type": "integer", "default": 5},
+                 }}),
+            Tool(name="autosci_score_idea",
+                 description=(
+                     "[PASSIVE] Score an idea on novelty / feasibility / impact (0-1 each) and "
+                     "return 3 variants (extension / break / cross-field). No LLM call."
+                 ),
+                 inputSchema={"type": "object", "properties": {
+                     "title": {"type": "string"},
+                     "one_liner": {"type": "string"},
+                     "angle": {"type": "string"},
+                     "modalities": {"type": "array", "items": {"type": "string"}},
+                     "priority": {"type": "integer", "default": 5},
+                     "paper_corpus_hint": {"type": "string", "default": ""},
+                 }, "required": ["title", "one_liner", "angle"]}),
+            Tool(name="autosci_analyze_themes",
+                 description=(
+                     "[PASSIVE] Cluster the KB into 3-5 themes. For each theme: label, "
+                     "core paper, year range, trending flag, gap suggestion. No LLM call."
+                 ),
+                 inputSchema={"type": "object", "properties": {
+                     "top_n": {"type": "integer", "default": 5},
+                 }}),
         ]
 
     @server.call_tool()
@@ -476,6 +529,53 @@ def make_server(runs_dir: Path, vault_dir: Path, distill_path: Path):
                 verdict=arguments.get("verdict", "kept"),
                 vault_dir=vault_dir,
             ), ensure_ascii=False, indent=2))
+
+        # ── v0.15: deep analysis + idea scoring + theme discovery ──
+        if name == "autosci_analyze_paper":
+            from autosci.paper_analyzer import analyze_doc
+            target_id = arguments.get("doc_id", "")
+            target = next((d for d in _kb_search("", k=999) for _ in [None]), None)  # noqa
+            # try the digest files
+            for d in _all_digest_docs():
+                if d.doc_id == target_id or not target_id:
+                    a = analyze_doc(d)
+                    return _text(json.dumps(a.to_dict(), ensure_ascii=False, indent=2))
+            return _text(f"(no doc found for {target_id})")
+
+        if name == "autosci_analyze_corpus":
+            from autosci.paper_analyzer import analyze_corpus
+            docs = _all_digest_docs()
+            top = int(arguments.get("top", 5))
+            analyses = analyze_corpus(docs, top_n=top)
+            return _text(json.dumps([a.to_dict() for a in analyses],
+                                    ensure_ascii=False, indent=2))
+
+        if name == "autosci_score_idea":
+            from autosci.idea_scorer import score_idea, make_variants
+            from autosci.schemas import IdeaSeed, Modality
+            seed = IdeaSeed(
+                id=arguments.get("idea_id", "user_idea"),
+                title=arguments["title"],
+                one_liner=arguments.get("one_liner", ""),
+                angle=arguments.get("angle", ""),
+                modalities=[Modality(m) for m in arguments.get("modalities", [])],
+                priority=int(arguments.get("priority", 5)),
+                paper_corpus_hint=arguments.get("paper_corpus_hint", ""),
+            )
+            docs = _all_digest_docs()
+            score = score_idea(seed, docs)
+            variants = make_variants(seed)
+            return _text(json.dumps({
+                "score": score,
+                "variants": [v.model_dump() for v in variants],
+            }, ensure_ascii=False, indent=2))
+
+        if name == "autosci_analyze_themes":
+            from autosci.theme_analyzer import analyze_themes
+            docs = _all_digest_docs()
+            n = int(arguments.get("top_n", 5))
+            ta = analyze_themes(docs, target_themes=n)
+            return _text(json.dumps(ta.to_dict(), ensure_ascii=False, indent=2))
 
         return _text(f"unknown tool: {name}")
 
