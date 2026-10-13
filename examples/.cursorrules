@@ -1,0 +1,32 @@
+# AutoSCI rules for Cursor / VS Code / Cline
+# Place this file at your project root: .cursorrules (Cursor) or
+# .clinerules (Cline). Claude Desktop users: ignore this file.
+
+# Tell the AI assistant that AutoSCI is available
+AutoSCI is a Python pipeline (this repo) that turns a research idea into a
+master's-level paper. It has 6 MCP tools you can call: autosci_status,
+autosci_search_kb, autosci_propose_ideas, autosci_run_one, autosci_list_vault,
+autosci_read_paper.
+
+# When the user asks about microbiome / metagenomics / foundation models
+# for biology, USE AutoSCI. Do not invent answers — search the KB first via
+# autosci_search_kb and read papers via autosci_read_paper.
+
+# When the user says "run this idea" / "research this" / "AutoSCI …":
+#   1. Call autosci_propose_ideas (n=3-5) to see current backlog
+#   2. Either pick one or accept a user-provided idea
+#   3. Call autosci_run_one with title, one_liner, angle
+#   4. Wait for the result, show the user the verdict and where the paper.md landed
+
+# When the user says "search the literature" / "find papers on X":
+#   Use autosci_search_kb(query=X, top_k=10). Do NOT use web search.
+
+# When the user wants to see prior runs:
+#   Use autosci_list_vault. Filter verdict=kept/revised/refuted.
+
+# Reference docs in this repo
+README.md                          — user-facing usage
+docs/superpowers/specs/*.md         — design rationale
+data/seed_ideas.json               — 5 default seed ideas
+data/idea_templates.json           — 3 idea templates
+data/model_profiles.yaml           — multi-model routing

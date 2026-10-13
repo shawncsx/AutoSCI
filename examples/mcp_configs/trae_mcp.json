@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "autosci": {
+      "command": "python",
+      "args": ["-m", "autosci.mcp_server"],
+      "cwd": "D:\\shawn\\git\\AutoSCI",
+      "env": {
+        "AGNES_BASE_URL": "https://api.agnes-ai.cn/v1",
+        "AGNES_API_KEY": "sk-LYFGTYGx4AF0JjyWs1ukBomO8iSQKzwz1SbUkvwm9SheppRu",
+        "AGNES_MODEL": "agnes-3.0-flash",
+        "PYTHONPATH": "D:\\shawn\\git\\AutoSCI"
+      }
+    }
+  }
+}
