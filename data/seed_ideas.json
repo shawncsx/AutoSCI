@@ -1,0 +1,49 @@
+{
+  "ideas": [
+    {
+      "id": "01_graph_vs_rank_transformer",
+      "title": "Graph Transformer Over Microbiome Communities: Replacing Rank-Encoded Sequence Transformers",
+      "one_liner": "Replace MGM/Waypoint-style rank+positional-encoding with a permutation-invariant Graph Transformer that uses sequence-similarity priors as edges and fuses multi-source node features.",
+      "angle": "导师提出的三大质疑（顺序人为/token 粒度阈值敏感/丰度被排序位置间接压缩利用）都不被现有 Transformer 方案彻底解决。本课题把微生物组表示学习推到图模型：节点是 99%-similarity OTU，边是序列相似度先验（≥95–96% 连边、边权＝距离），并通过 FiLM 或 attention bias 把绝对丰度直接注入节点特征。这样既避免了排序诱发的任意性，也保留了 permutation invariance；并且图节点可以同时容纳序列 embedding（Genos-m/MGM2 冻结）、分类学层级、HUMAnN 功能注释与 LLM 生成的功能语义。",
+      "modalities": ["graph_model", "multimodal_fusion"],
+      "priority": 10,
+      "paper_corpus_hint": "graph neural network microbiome transformer positional encoding permutation invariance FiLM OTU clustering abundance integration cross-cohort generalisation"
+    },
+    {
+      "id": "02_otu_threshold_sensitivity",
+      "title": "OTU Clustering Threshold Sensitivity (97% vs 99%) in Microbiome Foundation Models: An Empirical Stability Study",
+      "one_liner": "Quantify how the 97%-vs-99% OTU clustering threshold changes downstream classification stability and rank-order of OTU tokens in MGM2 / Waypoint / BiomeGPT.",
+      "angle": "导师已点出 token 粒度对聚类阈值敏感，但是 7 篇种子论文里**只有 MGM2 用 99% OTU，没有任何一篇做了 97% vs 99% 的对照实证**。本课题在 metalog.embl.de 8 万+ profile、MicrobeAtlas 子集、以及 CRC 8 队列 1538 WMS 三个数据集上做阈值的 systematic sweep：(a) token 集 Jaccard 距离 (b) 下游分类 AUROC (c) leave-one-cohort-out 稳定性 (d) 重要 OTU 排名变化。给出实验性结论与对'如何报告 OTU 阈值'的具体建议。",
+      "modalities": ["threshold_sensitivity", "cross_cohort"],
+      "priority": 9,
+      "paper_corpus_hint": "OTU clustering 97 99 threshold sensitivity tokenisation abundance classification leave-one-cohort-out stability rank-order"
+    },
+    {
+      "id": "03_graph_ssl_with_abundance_fusion",
+      "title": "Self-Supervised Pretraining of a Microbiome Graph Model With Direct Abundance Fusion",
+      "one_liner": "A masked-node + contrastive SSL objective on a microbiome graph where absolute abundance is fused directly into node features rather than indirectly via ordering.",
+      "angle": "现有方法里 BiomeGPT 用分箱、MGM2 用 FiLM 是少有的'直接'利用丰度的方案，但都不系统。本课题设计三组互补的自监督目标：(1) mask-and-predict 占位节点丰度 (2) sample-level contrastive learning of abundance distributions (3) cross-modal alignment between sequence-derived embeddings and taxonomy-derived embeddings。在 metalog 大规模无标注集上预训练，再在 CRC 8 队列上做迁移。对比基线：MGM/Waypoint/BiomeGPT 各自的 SSL 版本（如果我们能离线复现的话），以及一个 XGBoost-on-features 的强 baseline。",
+      "modalities": ["ssl", "graph_model", "multimodal_fusion"],
+      "priority": 8,
+      "paper_corpus_hint": "self-supervised pretraining mask contrastive abundance cross-modal alignment microbiome graph transfer learning"
+    },
+    {
+      "id": "04_cross_cohort_robust_gfm",
+      "title": "A Cross-Cohort Robust Microbiome Graph Foundation Model Under Realistic Query Distribution Shift",
+      "one_liner": "Train a graph microbiome model whose cross-cohort degradation is <X% AUROC, evaluated on CRC 8 cohorts + metalog splits; compare against tabular foundation models under shifted distributions.",
+      "angle": "arxiv_2606.24995 'Are Tabular Foundation Models Robust to Realistic Query Distribution Shifts in Microbiome Data?' 给了我们一面镜子：表格 FM 在零膨胀 / 分布偏移下'性能崩溃'。本课题 (a) 复现该结论 (b) 用 Graph 替代 tabular，验证图模型是否能保持 >80% relative AUROC under LODO (c) 引入一种 invariant-risk-minimization 风格的 domain adaptation (d) 在 CRC 8 队列里做完整 leave-one-cohort-out 报告。",
+      "modalities": ["cross_cohort", "graph_model", "compositional"],
+      "priority": 8,
+      "paper_corpus_hint": "cross-cohort domain shift tabular foundation model microbiome robustness leave-one-cohort-out CRC Zeller Feng Yu Vogtmann Thomas Wirbel Yachida Hannigan"
+    },
+    {
+      "id": "05_compositional_zero_inflated_graph",
+      "title": "A Graph Model on Compositionally Constrained Microbiome Data With Zero-Inflation Awareness",
+      "one_liner": "Build a graph model that respects compositional constraint (negative correlation between taxa) and explicitly handles zero inflation via a Dirichlet-multinomial-style likelihood head.",
+      "angle": "arxiv_2207.12475 'Bugs as Features Part I' 指出零替换仍无最优解；arxiv_2606.24995 又把 compositional data 与 distribution shift 串起来。本课题 (1) 在 graph 输入层用 ALR/clr 变换替代 log-norm 替换 (2) 输出层用 Dirichlet-Multinomial 似然 + MicroBeta 校准 (3) 设计 ablation：图 vs 集合 vs Transformer 输入；CLR vs ALR vs raw；zero-aware vs zero-blind。实现在零比例 > 50% 的子集（如 Parkinson's cohort、IBD）上明显优于 naive baseline。",
+      "modalities": ["compositional", "graph_model"],
+      "priority": 7,
+      "paper_corpus_hint": "compositional data Dirichlet multinomial zero inflation log-ratio clr alr microbiome Parkinson IBD"
+    }
+  ]
+}
