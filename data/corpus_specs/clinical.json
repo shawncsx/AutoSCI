@@ -1,0 +1,21 @@
+{
+  "name": "Clinical Trial & EHR",
+  "description": "Clinical outcomes prediction, patient stratification, treatment response from EHR data.",
+  "digest_dir": "_digest/clinical",
+  "paper_corpus_hint": "patient stratification treatment response EHR tabular foundation model mortality readmission",
+  "modalities": [
+    "patient_stratification",
+    "treatment_response",
+    "tabular_foundation"
+  ],
+  "keywords": [
+    "EHR",
+    "clinical trial",
+    "patient outcome",
+    "mortality",
+    "readmission",
+    "tabular"
+  ],
+  "seed_idea_hint": "Foundation model for clinical outcomes from longitudinal EHR",
+  "embed_mode": "minilm"
+}

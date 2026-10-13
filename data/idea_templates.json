@@ -1,0 +1,37 @@
+{
+  "templates": [
+    {
+      "id": "tmpl_graph_threshold",
+      "name": "Graph model + threshold sensitivity",
+      "method_anchor": "Graph Attention Network / Graph Transformer",
+      "dataset_anchor": "MicrobeAtlas OTU 99% clustering",
+      "evaluation_anchor": "leave-one-cohort-out (LODO)",
+      "novelty_constraint": "must NOT use rank-encoded sequence Transformer as the graph baseline (instead use raw OTU co-occurrence)",
+      "modalities": ["graph_model", "threshold_sensitivity"],
+      "priority": 8,
+      "paper_corpus_hint": "OTU clustering 97 99 graph neural network microbiome abundance cross-cohort"
+    },
+    {
+      "id": "tmpl_ssl_calibration",
+      "name": "SSL pretraining + calibration",
+      "method_anchor": "masked-node self-supervised pretraining",
+      "dataset_anchor": "metalog.embl.de MetaPhlAn4 profiles",
+      "evaluation_anchor": "calibration metrics (ECE, Brier score) on CRC 8 cohorts",
+      "novelty_constraint": "must add an explicit calibration step (not just classification accuracy)",
+      "modalities": ["ssl", "compositional"],
+      "priority": 7,
+      "paper_corpus_hint": "self-supervised pretraining mask microbiome calibration uncertainty ECE"
+    },
+    {
+      "id": "tmpl_cross_cohort_invariant",
+      "name": "Invariant risk minimization for cross-cohort",
+      "method_anchor": "Invariant Risk Minimization (IRM) on top of any tabular FM",
+      "dataset_anchor": "CRC 8 cohorts",
+      "evaluation_anchor": "Worst-group AUROC across cohorts",
+      "novelty_constraint": "must report worst-group (not mean) AUROC; must compare against domain-adversarial baseline",
+      "modalities": ["cross_cohort"],
+      "priority": 8,
+      "paper_corpus_hint": "cross-cohort domain shift invariant risk minimization worst group microbiome"
+    }
+  ]
+}

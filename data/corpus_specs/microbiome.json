@@ -1,0 +1,26 @@
+{
+  "name": "Microbiome Representation Learning",
+  "description": "AI for metagenomics, OTU/species foundation models, cross-cohort robustness.",
+  "digest_dir": "D:\\shawn\\paper\\_digest",
+  "paper_corpus_hint": "graph neural network microbiome transformer OTU 99% clustering compositional cross-cohort pretraining",
+  "modalities": [
+    "graph_model",
+    "ssl",
+    "compositional",
+    "cross_cohort",
+    "threshold_sensitivity",
+    "multimodal_fusion"
+  ],
+  "keywords": [
+    "microbiome",
+    "metagenome",
+    "OTU",
+    "16S",
+    "WMS",
+    "alpha-diversity",
+    "cross-cohort",
+    "abundance"
+  ],
+  "seed_idea_hint": "Graph-based representation learning for microbial communities",
+  "embed_mode": "bge-small-zh"
+}

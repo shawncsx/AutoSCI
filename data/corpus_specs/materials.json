@@ -1,0 +1,21 @@
+{
+  "name": "Materials Science & Chemistry",
+  "description": "Molecular property prediction, catalyst discovery, MOF/co-crystal design.",
+  "digest_dir": "_digest/materials",
+  "paper_corpus_hint": "molecular property MOF catalyst GNN transformer DFT crystal",
+  "modalities": [
+    "molecular_property",
+    "generation",
+    "inverse_design"
+  ],
+  "keywords": [
+    "MOF",
+    "crystal",
+    "catalyst",
+    "DFT",
+    "SMILES",
+    "molecule"
+  ],
+  "seed_idea_hint": "Multi-modal molecular property predictor combining SMILES + 3D structure",
+  "embed_mode": "minilm"
+}
