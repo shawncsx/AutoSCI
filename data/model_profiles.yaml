@@ -1,0 +1,113 @@
+# AutoSCI — model profiles (v0.13)
+#
+# Each named profile is a complete LLM endpoint. The agent → tier → profile
+# mapping is in the `routing` block below. Delete a profile to fall back to
+# AGNES_* env vars; comment a profile with `#` to skip it.
+#
+# Tiers:
+#   fast   - cheapest, used for mechanical agents (LitSurveyer, Grounder, Sketcher)
+#   smart  - default, used for design + writing
+#   reason - best available, used for Reviewer + Refuter
+#
+# After editing, run:
+#   python -m autosci.model_registry            # list profiles
+#   python -m pytest tests/ -q                  # validate (uses fake LLM)
+
+profiles:
+
+  agnes_fast:
+    provider: openai             # agnes is OpenAI-compatible
+    base_url: ${AGNES_BASE_URL}
+    api_key_env: AGNES_API_KEY
+    model: ${AGNES_MODEL}
+    cost_per_1k_in: 0.002
+    cost_per_1k_out: 0.006
+    note: "Default Agnes model (cheap)"
+
+  agnes_smart:
+    provider: openai
+    base_url: ${AGNES_BASE_URL}
+    api_key_env: AGNES_API_KEY
+    model: ${AGNES_MODEL}        # for now same; switch to a stronger Agnes tier
+    cost_per_1k_in: 0.005
+    cost_per_1k_out: 0.015
+    note: "Smarter Agnes model"
+
+  # Uncomment to enable OpenAI:
+  # gpt4o_mini:
+  #   provider: openai
+  #   base_url: https://api.openai.com/v1
+  #   api_key_env: OPENAI_API_KEY
+  #   model: gpt-4o-mini
+  #   cost_per_1k_in: 0.00015
+  #   cost_per_1k_out: 0.0006
+  #
+  # gpt4o:
+  #   provider: openai
+  #   base_url: https://api.openai.com/v1
+  #   api_key_env: OPENAI_API_KEY
+  #   model: gpt-4o
+  #   cost_per_1k_in: 0.0025
+  #   cost_per_1k_out: 0.01
+
+  # Uncomment to enable Anthropic:
+  # claude_haiku:
+  #   provider: anthropic
+  #   base_url: https://api.anthropic.com
+  #   api_key_env: ANTHROPIC_API_KEY
+  #   model: claude-3-5-haiku-20241022
+  #   cost_per_1k_in: 0.0008
+  #   cost_per_1k_out: 0.004
+  #
+  # claude_sonnet:
+  #   provider: anthropic
+  #   base_url: https://api.anthropic.com
+  #   api_key_env: ANTHROPIC_API_KEY
+  #   model: claude-3-5-sonnet-20241022
+  #   cost_per_1k_in: 0.003
+  #   cost_per_1k_out: 0.015
+
+  # Uncomment to enable DeepSeek:
+  # deepseek_chat:
+  #   provider: deepseek
+  #   base_url: https://api.deepseek.com/v1
+  #   api_key_env: DEEPSEEK_API_KEY
+  #   model: deepseek-chat
+  #   cost_per_1k_in: 0.00014
+  #   cost_per_1k_out: 0.00028
+
+  # Uncomment to enable Qwen (DashScope):
+  # qwen_max:
+  #   provider: qwen
+  #   base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  #   api_key_env: DASHSCOPE_API_KEY
+  #   model: qwen-max
+  #   cost_per_1k_in: 0.020
+  #   cost_per_1k_out: 0.060
+
+  # Uncomment to enable GLM (Zhipu):
+  # glm_plus:
+  #   provider: glm
+  #   base_url: https://open.bigmodel.cn/api/paas/v4
+  #   api_key_env: GLM_API_KEY
+  #   model: glm-4-plus
+  #   cost_per_1k_in: 0.05
+  #   cost_per_1k_out: 0.05
+
+
+# ── Per-agent routing ──────────────────────────────────────────────────
+# Maps each AutoSCI sub-agent to a tier. The tier then maps to a profile
+# above. Default tier is "smart" if no entry.
+routing:
+  idea_closer:       smart
+  lit_surveyer:      fast
+  method_designer:    smart
+  exp_designer:       smart
+  paper_writer:       smart
+  citation_grounder:  fast
+  section_validator:  fast
+  code_sketcher:      fast
+  reviewer:           reason
+  refuter:            reason
+  idea_miner:         fast
+  rerank:             fast

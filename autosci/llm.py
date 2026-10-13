@@ -39,6 +39,10 @@ class LLMClient:
     model    : default from env AGNES_MODEL.
     timeout  : HTTP timeout seconds (default 60s).
     max_retries : retry budget for transient failures (default 3).
+    profile  : an optional ModelProfile (from model_registry); when set
+               it overrides the legacy base_url/api_key/model args.
+    router   : an optional ModelRouter; when set, ``with_timeout(agent_name)``
+               also routes to the right profile for that agent.
     """
 
     def __init__(
@@ -51,24 +55,35 @@ class LLMClient:
         client: Optional[httpx.Client] = None,
         cost_per_1k_in: Optional[float] = None,
         cost_per_1k_out: Optional[float] = None,
+        profile: Any = None,
+        router: Any = None,
     ) -> None:
-        self.base_url = (
-            base_url
-            or os.environ.get("AGNES_BASE_URL")
-            or "https://api.agnes-ai.cn/v1"
-        ).rstrip("/")
-        self.api_key = api_key or os.environ.get("AGNES_API_KEY") or ""
-        self.model = model or os.environ.get("AGNES_MODEL") or "agnes-3.0-flash"
-        self.timeout = timeout or float(os.environ.get("AUTOSCI_LLM_TIMEOUT_S") or 60)
+        # v0.13 — accept a ModelProfile directly
+        self._profile = profile
+        self._router = router
+        if profile is not None:
+            self.base_url = profile.base_url.rstrip("/")
+            self.api_key = profile.api_key
+            self.model = profile.model
+            self.cost_per_1k_in = profile.cost_per_1k_in
+            self.cost_per_1k_out = profile.cost_per_1k_out
+            self.timeout = profile.timeout
+        else:
+            self.base_url = (
+                base_url
+                or os.environ.get("AGNES_BASE_URL")
+                or "https://api.agnes-ai.cn/v1"
+            ).rstrip("/")
+            self.api_key = api_key or os.environ.get("AGNES_API_KEY") or ""
+            self.model = model or os.environ.get("AGNES_MODEL") or "agnes-3.0-flash"
+            self.cost_per_1k_in = cost_per_1k_in if cost_per_1k_in is not None else float(
+                os.environ.get("AUTOSCI_COST_IN", "0.002")
+            )
+            self.cost_per_1k_out = cost_per_1k_out if cost_per_1k_out is not None else float(
+                os.environ.get("AUTOSCI_COST_OUT", "0.006")
+            )
+            self.timeout = timeout or float(os.environ.get("AUTOSCI_LLM_TIMEOUT_S") or 60)
         self.max_retries = max_retries or int(os.environ.get("AUTOSCI_MAX_RETRIES") or 3)
-        # Per-1K-token prices in CNY (rough). Override by passing to constructor
-        # or via AUTOSCI_COST_IN/AUTOSCI_COST_OUT env vars.
-        self.cost_per_1k_in = cost_per_1k_in if cost_per_1k_in is not None else float(
-            os.environ.get("AUTOSCI_COST_IN", "0.002")
-        )
-        self.cost_per_1k_out = cost_per_1k_out if cost_per_1k_out is not None else float(
-            os.environ.get("AUTOSCI_COST_OUT", "0.006")
-        )
         # Per-call timeout overrides (long-output agents can set higher)
         self._per_call_timeout: Optional[float] = None
         # Lifetime token + cost accumulators (read by Director for reporting)
@@ -106,11 +121,27 @@ class LLMClient:
     }
 
     def with_timeout(self, agent_name: str) -> "LLMClient":
-        """Return a lightweight wrapper view that sets a per-call timeout."""
+        """Return a lightweight wrapper view that sets a per-call timeout.
+
+        v0.13: if a router is attached, switch this client's base_url /
+        model / api_key to the resolved profile for ``agent_name`` so the
+        actual HTTP call hits the right provider.
+        """
         t = self.AGENT_TIMEOUTS.get(agent_name, self.timeout)
         # We can't easily subclass the client per-call, so we mutate _per_call_timeout
         # (callers should restore after their call).
         self._per_call_timeout = t
+        # v0.13 — per-agent profile routing
+        if self._router is not None:
+            try:
+                prof = self._router.resolve(agent_name)
+                self.base_url = prof.base_url.rstrip("/")
+                self.api_key = prof.api_key
+                self.model = prof.model
+                self.cost_per_1k_in = prof.cost_per_1k_in
+                self.cost_per_1k_out = prof.cost_per_1k_out
+            except Exception as e:
+                log.debug("router.resolve(%s) failed: %s", agent_name, e)
         return self
 
     def reset_timeout(self) -> None:

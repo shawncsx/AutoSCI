@@ -43,6 +43,7 @@ from autosci.agents import (
 )
 from autosci.kb import KnowledgeBase
 from autosci.llm import LLMClient
+from autosci.model_registry import ModelRouter
 from autosci.schemas import IdeaSeed, IdeaState, Verdict
 
 
@@ -61,8 +62,12 @@ class RunConfig:
 class ResearchTeam:
     """Drives a single project through the 8-agent pipeline."""
 
-    def __init__(self, llm: LLMClient, kb: KnowledgeBase, cfg: RunConfig | None = None) -> None:
+    def __init__(self, llm: LLMClient, kb: KnowledgeBase, cfg: RunConfig | None = None,
+                 router: ModelRouter | None = None) -> None:
         self.llm = llm
+        # v0.13 — attach a router if the LLMClient didn't already have one
+        if router is not None:
+            self.llm._router = router
         self.kb = kb
         self.cfg = cfg or RunConfig(output_root=Path("runs"))
 
